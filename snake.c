@@ -7,7 +7,7 @@
 #include <ncurses.h>
 #include <string.h>
 
-#define MATRIX_MAX_SIZE 100
+#define MATRIX_MAX_SIZE 99
 
 #ifndef TRUE
 #   define TRUE  1
@@ -46,9 +46,9 @@ typedef struct SnakeMatrix* snake_t;
 snake_t SnakeInit (ssize_t x, ssize_t y, size_t snake_lenght, ssize_t head_x, ssize_t head_y)
 {
     if (
-        x >= MATRIX_MAX_SIZE || y >= MATRIX_MAX_SIZE
-        || head_x < 0 || head_x >= x || head_y < 0
-        || head_y >= y || head_x - snake_lenght < 0
+        x > MATRIX_MAX_SIZE || y > MATRIX_MAX_SIZE || x <= 0 || y <= 0
+        || head_x < 0 || head_x >= x || head_y < 0 || head_y >= y
+        || head_x - snake_lenght < 0
     )  return NULL;
 
     snake_t out = malloc( sizeof(struct SnakeMatrix) );
@@ -143,8 +143,11 @@ int CheckFruit (snake_t snake, int side)
             break;
     }
 
-    if ( snake->matrix[tmp.x][tmp.y] == SNAKE_FRUIT )
-        return TRUE;
+    if (
+        tmp.x >= 0 && tmp.x < snake->x
+        && tmp.y >= 0 && tmp.y < snake->y
+        && snake->matrix[tmp.x][tmp.y] == SNAKE_FRUIT
+    )  return TRUE;
 
     return FALSE;
 }
@@ -154,8 +157,8 @@ void GenerateFruit (snake_t snake)
     unsigned int x, y;
 
     for ( size_t i = 0; i < 5; i++ ) {
-        x = rand() % snake->x;
-        y = rand() % snake->y;
+        x = (unsigned int) rand() % snake->x;
+        y = (unsigned int) rand() % snake->y;
 
         if ( snake->matrix[x][y] == NO_SNAKE ) {
             snake->matrix[x][y] = SNAKE_FRUIT;
@@ -360,6 +363,10 @@ void SnakeGame (snake_t snake, int time_cycle, size_t fruit_amount)
     sleep(3);
 }
 
+#define ERROR_MSG_SPEED "error: -speed: use '-speed [1, inf)'\n"
+#define ERROR_MSG_FRUIT "error: -fruit: use '-fruit [1, x*y-3]'\n"
+#define ERROR_MSG_SIZE  "error: -size: use '-size [8, 99] [8, 99]'\n"
+
 int main (int argc, char* argv[])
 {
     ssize_t size_x = 16;
@@ -371,47 +378,47 @@ int main (int argc, char* argv[])
 
         if ( strcmp( argv[i], "-speed" ) == 0 ) {
             if ( ++i >= argc ) {
-                fprintf( stderr, "error: -speed: use '-speed [1, inf)'\n" );
+                fprintf( stderr, ERROR_MSG_SPEED );
                 return 1;
             }
             int tmp = atoi( argv[i] );
             if ( tmp <= 0 ) {
-                fprintf( stderr, "error: -speed: use '-speed [1, inf)'\n" );
+                fprintf( stderr, ERROR_MSG_SPEED );
                 return 1;
             }
             time_interval = tmp * 1000;
 
         } else if ( strcmp( argv[i], "-fruit" ) == 0 ) {
             if ( ++i >= argc ) {
-                fprintf( stderr, "error: -fruit: use '-fruit [1, x*y-3]'\n" );
+                fprintf( stderr, ERROR_MSG_FRUIT );
                 return 1;
             }
             int tmp = atoi( argv[i] );
-            if ( tmp < 1 || tmp >= size_x * size_y - 3 ) {
-                fprintf( stderr, "error: -fruit: use '-fruit [1, x*y-3]'\n" );
+            if ( tmp < 1 || tmp > size_x * size_y - 3 ) {
+                fprintf( stderr, ERROR_MSG_FRUIT );
                 return 1;
             }
             fruit_amount = tmp;
 
         } else if ( strcmp( argv[i], "-size" ) == 0 ) {
             if ( ++i >= argc ) {
-                fprintf( stderr, "error: -size: use '-size [8, 99] [8, 99]'\n" );
+                fprintf( stderr, ERROR_MSG_SIZE );
                 return 1;
             }
             int tmp = atoi( argv[i] );
-            if ( tmp < 8 || tmp >= MATRIX_MAX_SIZE ) {
-                fprintf( stderr, "error: -size: use '-size [8, 99] [8, 99]'\n" );
+            if ( tmp < 8 || tmp > MATRIX_MAX_SIZE ) {
+                fprintf( stderr, ERROR_MSG_SIZE );
                 return 1;
             }
             size_y = tmp;
 
             if ( ++i >= argc ) {
-                fprintf( stderr, "error: -size: use '-size [8, 99] [8, 99]'\n" );
+                fprintf( stderr, ERROR_MSG_SIZE );
                 return 1;
             }
             tmp = atoi( argv[i] );
-            if ( tmp < 8 || tmp >= MATRIX_MAX_SIZE ) {
-                fprintf( stderr, "error: -size: use '-size [8, 99] [8, 99]'\n" );
+            if ( tmp < 8 || tmp > MATRIX_MAX_SIZE ) {
+                fprintf( stderr, ERROR_MSG_SIZE );
                 return 1;
             }
             size_x = tmp;
